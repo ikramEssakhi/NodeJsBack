@@ -1,3 +1,4 @@
+//server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -27,8 +28,21 @@ const UserSchema = new mongoose.Schema({
     favoriteSport: String   // Add favoriteSport field
   });
   
-  const User = mongoose.model('user', UserSchema);
+  const EventSchema = new mongoose.Schema({
+    sport: String,
+    description: String,
+    numPersonsNeeded: Number,
+    dateTime: String,
+    location: {
+      latitude: Number,
+      longitude: Number,
+    },
+  });
   
+  const User = mongoose.model('user', UserSchema);
+  // Create Event model
+const Event = mongoose.model('event', EventSchema);
+
 
 app.get("/getuser",(req,res)=>
 {
@@ -90,7 +104,46 @@ app.post('/register', async (req, res) => {
     }
   });
   
+
+  // Add a new route for adding events
+  app.post('/addEvent', async (req, res) => {
+    const { sport, description, numPersonsNeeded, dateTime, location } = req.body;
   
+    console.log('Event addition attempt:', { sport, description, numPersonsNeeded, dateTime, location });
+  
+    try {
+      const newEvent = new Event({
+        sport,
+        description,
+        numPersonsNeeded,
+        dateTime,
+        location: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        },
+      });
+  
+      await newEvent.save();
+      console.log('Event added successfully');
+      res.json({ message: 'Event added successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+
+  app.get('/getEvents', async (req, res) => {
+    try {
+      const events = await Event.find();
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+
 app.get('/test', (req, res) => {
   res.json({ message: 'Test successful' });
 });
