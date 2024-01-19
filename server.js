@@ -25,7 +25,9 @@ const UserSchema = new mongoose.Schema({
     lastName: String,       // Add lastName field
     phoneNumber: String,    // Add phoneNumber field
     sex: String,            // Add sex field
-    favoriteSport: String   // Add favoriteSport field
+    favoriteSport: String,  // Add favoriteSport field
+    competence: Number,
+    about: String,
   });
   
   const EventSchema = new mongoose.Schema({
@@ -42,16 +44,15 @@ const UserSchema = new mongoose.Schema({
   
   const RequestSchema = new mongoose.Schema({
     eventId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId, // Ensure this is an ObjectId
       ref: 'event',
     },
-    userId: String, // Change the type to String
+    userId: String, // Change the type to String if it's correct
     status: {
       type: String,
-      default: 'InProgress',
     },
-    // Add any additional fields needed for the request
   });
+  
   const Request = mongoose.model('request', RequestSchema);
   
   const User = mongoose.model('user', UserSchema);
@@ -89,9 +90,9 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    const { password, email, firstName, lastName, phoneNumber, sex, favoriteSport } = req.body;
+    const { password, email, firstName, lastName, phoneNumber, sex, favoriteSport,competence,about} = req.body;
   
-    console.log('Registration attempt:', { password, email, firstName, lastName, phoneNumber, sex, favoriteSport });
+    console.log('Registration attempt:', { password, email, firstName, lastName, phoneNumber, sex, favoriteSport,competence,about });
   
     try {
       const existingUser = await User.findOne({ email });
@@ -107,6 +108,8 @@ app.post('/register', async (req, res) => {
           phoneNumber,
           sex,
           favoriteSport,
+          competence,
+          about,
         });
   
         await newUser.save();
@@ -167,6 +170,7 @@ app.post('/register', async (req, res) => {
       const newRequest = new Request({
         eventId,
         userId,
+        status: 'InProgress', // Set the status explicitly to 'InProgress'
       });
   
       await newRequest.save();
@@ -177,6 +181,7 @@ app.post('/register', async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
   
   app.get('/getRequests', async (req, res) => {
     try {
@@ -206,45 +211,49 @@ app.post('/register', async (req, res) => {
   });
 
   
-app.post('/acceptRequest', async (req, res) => {
-  const { eventId, userId } = req.body;
-
-  try {
-    const request = await Request.findOne({ eventId, userId });
-
-    if (request) {
-      request.status = 'Accepted';
-      await request.save();
-
-      res.json({ message: 'Request accepted successfully' });
-    } else {
-      res.status(404).json({ message: 'Request not found' });
+  app.post('/acceptRequest', async (req, res) => {
+    const { eventId, userId } = req.body;
+  
+    try {
+      const request = await Request.findOne({ eventId, userId });
+  
+      if (request) {
+        console.log('Found request:', request);
+        request.status = 'Accepted';
+        await request.save();
+  
+        // Assuming you want to send back the updated request
+        res.json({ message: 'Request accepted successfully', request });
+      } else {
+        res.status(404).json({ message: 'Request not found' });
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-  } catch (error) {
-    console.error('Error accepting request:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-app.post('/refuseRequest', async (req, res) => {
-  const { eventId, userId } = req.body;
-
-  try {
-    const request = await Request.findOne({ eventId, userId });
-
-    if (request) {
-      request.status = 'Refused';
-      await request.save();
-
-      res.json({ message: 'Request refused successfully' });
-    } else {
-      res.status(404).json({ message: 'Request not found' });
+  });
+  
+  app.post('/refuseRequest', async (req, res) => {
+    const { eventId, userId } = req.body;
+  
+    try {
+      const request = await Request.findOne({ eventId, userId });
+  
+      if (request) {
+        request.status = 'Refused';
+        await request.save();
+  
+        // Assuming you want to send back the updated request
+        res.json({ message: 'Request refused successfully', request });
+      } else {
+        res.status(404).json({ message: 'Request not found' });
+      }
+    } catch (error) {
+      console.error('Error refusing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-  } catch (error) {
-    console.error('Error refusing request:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+  });
+  
 app.get('/getEventsByEMail', async (req, res) => {
   try {
     const userEmail = req.query.userEmail;
